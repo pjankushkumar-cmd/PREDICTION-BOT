@@ -364,9 +364,12 @@ async def post_init(app: Application) -> None:
     app.job_queue.run_repeating(poll_loop, interval=POLL_SECONDS, first=1, name="api-poller")
 
 
-def main() -> None:
+async def run_bot() -> None:
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN environment variable is required")
+
+    # Explicit async lifecycle avoids Render/Python event-loop issues with
+    # run_polling() and guarantees start_polling() is awaited.
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
     set_conv = ConversationHandler(
@@ -382,12 +385,26 @@ def main() -> None:
     app.add_handler(CommandHandler("go", go))
     app.add_handler(CommandHandler("stop", stop))
     app.add_handler(CommandHandler("changename", change_name))
-    app.add_handler(CommandHandler("Clearchat", clear_chat))
+    # Telegram officially recommends lowercase command names.
+    app.add_handler(CommandHandler("clearchat", clear_chat))
     app.add_handler(set_conv)
     app.add_handler(CommandHandler("status", status))
 
-    log.info("Bot 1 starting")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    await app.initialize()
+    await app.start()
+    try:
+        await app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+        log.info("Bot 1 polling started successfully")
+        await asyncio.Event().wait()
+    finally:
+        if app.updater.running:
+            await app.updater.stop()
+        await app.stop()
+        await app.shutdown()
+
+
+def main() -> None:
+    asyncio.run(run_bot())
 
 
 if __name__ == "__main__":

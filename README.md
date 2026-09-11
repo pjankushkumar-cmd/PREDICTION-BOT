@@ -1,26 +1,32 @@
-# Bot 1 — Render test
+# Bot 1 Test — Render
 
-## Render setup
-1. Upload this folder/repository to GitHub or deploy the ZIP contents to Render.
-2. Create a **Background Worker** on Render.
-3. Build command: `pip install -r requirements.txt`
-4. Start command: `python bot.py`
-5. Add environment variable `BOT_TOKEN` with your BotFather token.
-6. `ADMIN_ID`, `API_URL`, and `POLL_SECONDS` are already configured in `render.yaml`.
+This is the first test bot only.
+
+## Render
+Build Command:
+`pip install -r requirements.txt`
+
+Start Command:
+`python bot.py`
+
+Environment variables:
+- `BOT_TOKEN` = your BotFather token
+- `ADMIN_ID` = `8767998937`
+- `API_URL` = `https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json`
+- `POLL_SECONDS` = `3`
 
 ## Commands
-- `/go` — starts the test layout and API polling.
-- `/stop` — stops polling.
-- `/setmessage` — choose 0–9 and then send the exact text. Emoji and Unicode are supported.
-- `/setmessage 5` — shortcut to edit number 5.
-- `/Clearchat` — deletes messages managed by this bot.
-- `/changename New Name` — changes the bot's Telegram display name (not the @username).
-- `/status` — shows current state.
+- `/go` — starts the managed message layout and API polling
+- `/stop` — stops API actions
+- `/clearchat` — deletes only messages managed by this bot
+- `/changename New Name` — changes bot name
+- `/setmessage` — select 0–9 and send the exact text/emoji message
+- `/status` — status
+- `/cancel` — cancel message editing
 
-## Current test behavior
-The bot posts the header plus messages 0–9. It polls the supplied API. When a **new period/issue** is detected, it updates the header to the **last 3 digits** of the period and deletes **only the message belonging to the API's result number**. Other number messages are left untouched.
+Note: Telegram command names are normally lowercase, so use `/clearchat` rather than `/Clearchat`.
 
-The API parser accepts common fields such as `issueNumber`, `issue`, `period`, `periodNumber` and result fields such as `number`/`result`. If the actual API JSON uses different field names, update `parse_api()` after seeing one real response.
+## Behavior
+The bot reads the latest API record. It extracts the issue/period and number (0–9), updates the period's last 3 digits in the header, and deletes only the saved message belonging to that number. It does not delete the other 0–9 messages.
 
-## Important
-Never put the BotFather token directly into source code or GitHub. Use Render's Environment Variables.
+The bot uses an explicit async Telegram lifecycle to avoid the `There is no current event loop in thread 'MainThread'` / `Updater.start_polling was never awaited` startup error.
